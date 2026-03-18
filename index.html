@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Madame Aline — Mapa Astral</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,serif;background:linear-gradient(160deg,#06020f 0%,#0d0520 45%,#091224 100%);
+    color:#e2d9f3;min-height:100vh}
+  @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.9}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  @keyframes glow{0%,100%{box-shadow:0 0 12px rgba(168,85,247,.3)}50%{box-shadow:0 0 28px rgba(168,85,247,.7)}}
+  .fade-up{animation:fadeUp .45s ease forwards}
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-thumb{background:rgba(168,85,247,.35);border-radius:3px}
+  .btn-primary{background:linear-gradient(135deg,#6d28d9,#a855f7,#7c3aed);color:#fff;border:none;
+    padding:13px 26px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;
+    letter-spacing:.8px;font-family:Georgia,serif;text-transform:uppercase;transition:all .25s;
+    animation:glow 3s infinite;width:100%}
+  .btn-primary:hover{transform:translateY(-2px);filter:brightness(1.15)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;animation:none}
+  .btn-ghost{background:rgba(255,255,255,.06);color:#d4bbf7;border:1px solid rgba(168,85,247,.3);
+    padding:9px 18px;border-radius:10px;cursor:pointer;font-size:13px;transition:all .2s}
+  .btn-ghost:hover{background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.6)}
+  .card{background:rgba(15,8,35,.75);border:1px solid rgba(168,85,247,.22);
+    border-radius:20px;backdrop-filter:blur(16px)}
+  .input-field{background:rgba(255,255,255,.06);border:1px solid rgba(168,85,247,.28);
+    color:#e2d9f3;padding:11px 14px;border-radius:11px;font-size:14px;width:100%;
+    outline:none;transition:border .2s;font-family:Georgia,serif}
+  .input-field:focus{border-color:rgba(168,85,247,.7);box-shadow:0 0 0 3px rgba(168,85,247,.12)}
+  .input-field::placeholder{color:rgba(226,217,243,.28)}
+  label{font-size:11px;color:rgba(200,180,255,.6);margin-bottom:5px;display:block;
+    letter-spacing:.8px;text-transform:uppercase}
+  .nav-btn{background:transparent;color:rgba(200,180,255,.65);border:none;padding:8px 16px;
+    border-radius:8px;cursor:pointer;font-size:13px;letter-spacing:.5px;transition:all .2s;position:relative}
+  .nav-btn.active{color:#c084fc}
+  .nav-btn.active::after{content:'';position:absolute;bottom:-2px;left:20%;right:20%;
+    height:2px;background:linear-gradient(90deg,#7c3aed,#c084fc);border-radius:2px}
+  .nav-btn:hover{color:#d8b4fe;background:rgba(168,85,247,.1)}
+  .analysis-body{font-size:15px;line-height:1.95;color:#ddd6fe;white-space:pre-wrap}
+  .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .client-row{background:rgba(255,255,255,.04);border:1px solid rgba(168,85,247,.14);
+    border-radius:13px;padding:14px 18px;cursor:pointer;transition:all .2s;
+    display:flex;align-items:center;gap:14px}
+  .client-row:hover{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.45);transform:translateX(4px)}
+  .tag{background:rgba(168,85,247,.2);color:#d8b4fe;border-radius:6px;padding:3px 9px;font-size:11px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:500px){.grid2{grid-template-columns:1fr}}
+  .wrap{max-width:740px;margin:0 auto;padding:18px 16px 40px;position:relative;z-index:1}
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .star{position:absolute;border-radius:50%;background:rgba(255,255,255,.5)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const API = "https://madame-aline-api2-production.up.railway.app";
+
+const {useState, useEffect, useRef, useCallback} = React;
+
+const geocode = async (city) => {
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
+    {headers:{"Accept-Language":"pt-BR"}});
+  const d = await r.json();
+  if(!d.length) throw new Error("Cidade não encontrada");
+  return {lat:parseFloat(d[0].lat), lon:parseFloat(d[0].lon)};
+};
+
+const exportPDF = (client, analysis, imgB64) => {
+  const w = window.open("","_blank");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Mapa Astral — ${client.name}</title>
+  <style>body{font-family:Georgia,serif;max-width:780px;margin:40px auto;padding:0 32px;color:#1a1a2e;line-height:1.85}
+  h1{color:#6d28d9;font-size:26px;border-bottom:2px solid #a855f7;padding-bottom:10px}
+  h2,h3{color:#7c3aed;margin-top:1.5em}.meta{color:#666;font-size:13px;margin-bottom:28px}
+  .map-img{width:100%;max-width:600px;display:block;margin:24px auto;border-radius:12px}
+  pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:14px}</style>
+  </head><body>
+  <h1>🔮 Mapa Astral — ${client.name}</h1>
+  <div class="meta"><strong>Nascimento:</strong> ${client.date} ${client.time||""} &nbsp;|&nbsp;
+  <strong>Cidade:</strong> ${client.city}<br>
+  <strong>Gerado em:</strong> ${new Date().toLocaleDateString("pt-BR")} &nbsp;|&nbsp; Tropical / Placidus</div>
+  ${imgB64?`<img class="map-img" src="data:image/png;base64,${imgB64}" alt="Mapa Natal"/>`:""}
+  <hr/><pre>${analysis}</pre>
+  <p style="font-size:12px;color:#999;text-align:center;margin-top:32px">
+  Madame Aline · Astrologia Psicológica · Swiss Ephemeris (Tropical/Placidus)</p>
+  </body></html>`);
+  w.document.close(); setTimeout(()=>w.print(),600);
+};
+
+const Stars = () => (
+  <div className="stars">
+    {Array.from({length:60}).map((_,i)=>(
+      <div key={i} className="star" style={{
+        width:i%7===0?"2px":"1px",height:i%7===0?"2px":"1px",
+        background:`rgba(255,255,255,${.15+Math.random()*.7})`,
+        left:`${Math.random()*100}%`,top:`${Math.random()*100}%`,
+        animation:`twinkle ${2+Math.random()*4}s infinite ${Math.random()*4}s`
+      }}/>
+    ))}
+  </div>
+);
+
+const STORAGE_KEY = "aline_clients_v3";
+const loadClients = () => { try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")}catch{return []} };
+const saveClients = (c) => { try{localStorage.setItem(STORAGE_KEY,JSON.stringify(c))}catch{} };
+
+function App() {
+  const [view, setView]           = useState("home");
+  const [clients, setClients]     = useState(loadClients);
+  const [backendOk, setBackendOk] = useState(null);
+  const [form, setForm]           = useState({name:"",date:"",time:"",city:"",notes:""});
+  const [loading, setLoading]     = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [mapImg, setMapImg]       = useState(null);
+  const [analysis, setAnalysis]   = useState("");
+  const [mapData, setMapData]     = useState(null);
+  const [currentClient, setCurrentClient] = useState(null);
+  const [error, setError]         = useState("");
+  const analysisRef = useRef(null);
+
+  const checkHealth = () => {
+    setBackendOk(null);
+    fetch(`${API}/health`).then(r=>r.json())
+      .then(d=>setBackendOk(d.ok&&d.pipeline))
+      .catch(()=>setBackendOk(false));
+  };
+
+  useEffect(()=>{ checkHealth(); },[]);
+
+  const persist = (updated) => { setClients(updated); saveClients(updated); };
+
+  const runAnalise = useCallback(async (client, md) => {
+    setStreaming(true); setAnalysis("");
+    const body = {name:client.name,
+      birth_info:`${client.date}${client.time?" às "+client.time:""} — ${client.city}`,
+      planets_text:md.planets_text, aspects_text:md.aspects_text,
+      asc:md.asc, mc:md.mc, fortuna:md.fortuna, notes:client.notes||""};
+    try {
+      const resp = await fetch(`${API}/analise`,{method:"POST",
+        headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const reader = resp.body.getReader(); const dec = new TextDecoder();
+      let full = "";
+      while(true){
+        const {done,value} = await reader.read(); if(done)break;
+        for(const line of dec.decode(value).split("\n")){
+          if(line.startsWith("data: ")){
+            try{
+              const d = JSON.parse(line.slice(6));
+              if(d.type==="content_block_delta"&&d.delta?.text){
+                full+=d.delta.text; setAnalysis(full);
+                if(analysisRef.current) analysisRef.current.scrollTop=analysisRef.current.scrollHeight;
+              }
+            }catch{}
+          }
+        }
+      }
+      const updated = clients.map(c=>c.id===client.id
+        ?{...c,analysis:full,mapImg:md.image_b64,mapData:md,analyzedAt:new Date().toISOString()}:c);
+      persist(updated);
+    } catch(e){ setAnalysis("❌ Erro ao gerar análise: "+e.message); }
+    setStreaming(false);
+  },[clients]);
+
+  const handleSubmit = async () => {
+    setError(""); setLoading(true); setMapImg(null); setAnalysis("");
+    let geo;
+    try{ geo = await geocode(form.city); }
+    catch{ setLoading(false); setError("Cidade não encontrada. Tente com nome mais completo."); return; }
+    const [y,m,d] = form.date.split("-").map(Number);
+    const [h=12,mi=0] = (form.time||"12:00").split(":").map(Number);
+    const client = {...form,id:Date.now().toString(),lat:geo.lat,lon:geo.lon,createdAt:new Date().toISOString()};
+    const updated = [client,...clients]; persist(updated);
+    setCurrentClient(client); setView("analysis");
+    try{
+      const resp = await fetch(`${API}/mapa`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:client.name,year:y,month:m,day:d,
+          hour:h,minute:mi,utc_offset:-3,lat:geo.lat,lon:geo.lon,city:client.city})});
+      if(!resp.ok) throw new Error(await resp.text());
+      const md = await resp.json();
+      setMapImg(md.image_b64); setMapData(md); setLoading(false);
+      runAnalise(client, md);
+    }catch(e){ setLoading(false); setError("Erro: "+e.message); }
+    setForm({name:"",date:"",time:"",city:"",notes:""});
+  };
+
+  const openClient = (c) => {
+    setCurrentClient(c); setMapImg(c.mapImg||null);
+    setMapData(c.mapData||null); setAnalysis(c.analysis||"");
+    setStreaming(false); setLoading(false); setView("analysis");
+  };
+
+  const Header = () => (
+    <div style={{textAlign:"center",padding:"20px 0 10px"}}>
+      <div style={{fontSize:34,marginBottom:4,filter:"drop-shadow(0 0 12px rgba(192,132,252,.6))"}}>🔮</div>
+      <h1 style={{fontSize:28,fontWeight:"normal",letterSpacing:3,
+        background:"linear-gradient(135deg,#a855f7,#e879f9,#818cf8)",
+        WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Madame Aline</h1>
+      <p style={{fontSize:11,color:"rgba(200,160,255,.5)",letterSpacing:4,textTransform:"uppercase"}}>
+        Astrologia Psicológica</p>
+    </div>
+  );
+
+  const Nav = () => (
+    <div style={{display:"flex",justifyContent:"center",gap:4,margin:"10px 0 22px",
+      borderBottom:"1px solid rgba(168,85,247,.15)",paddingBottom:10,alignItems:"center"}}>
+      {[["home","✦ Início"],["form","+ Consulta"],["history",`◈ Histórico${clients.length?" ("+clients.length+")":""}`]].map(([v,l])=>(
+        <button key={v} className={`nav-btn${view===v?" active":""}`} onClick={()=>setView(v)}>{l}</button>
+      ))}
+      <div style={{marginLeft:"auto",display:"flex",alignItems:"center",fontSize:12,
+        color:backendOk===null?"rgba(200,180,255,.5)":backendOk?"#86efac":"#fca5a5"}}>
+        <span className="status-dot" style={{background:backendOk===null?"#888":backendOk?"#4ade80":"#f87171"}}/>
+        {backendOk===null?"verificando…":backendOk?"servidor OK":"offline"}
+        {backendOk===false&&<button onClick={checkHealth} style={{marginLeft:5,fontSize:11,
+          cursor:"pointer",background:"none",border:"none",color:"#fca5a5",textDecoration:"underline"}}>retry</button>}
+      </div>
+    </div>
+  );
+
+  if(view==="home") return (
+    <div><Stars/>
+      <div className="wrap"><Header/><Nav/>
+        <div className="fade-up" style={{textAlign:"center"}}>
+          <div className="card" style={{padding:"44px 36px",maxWidth:500,margin:"0 auto"}}>
+            <div style={{fontSize:56,marginBottom:16}}>🌙</div>
+            <h2 style={{marginBottom:10,fontWeight:"normal",fontSize:22,color:"#c084fc"}}>Bem-vinda ao Consultório</h2>
+            <p style={{marginBottom:30,color:"rgba(200,180,240,.65)",lineHeight:1.8,fontSize:15}}>
+              Cada mapa natal é um espelho da alma — uma linguagem simbólica que convida ao autoconhecimento profundo.</p>
+            <button className="btn-primary" onClick={()=>setView("form")}>✦ Iniciar Nova Consulta</button>
+            {clients.length>0&&<button className="btn-ghost" onClick={()=>setView("history")}
+              style={{width:"100%",marginTop:12}}>
+              Ver {clients.length} consulta{clients.length>1?"s":""} anteriore{clients.length>1?"s":""}</button>}
+          </div>
+          <div style={{display:"flex",justifyContent:"center",gap:22,marginTop:36,fontSize:24,color:"rgba(200,160,255,.45)"}}>
+            {["☉","☽","☿","♀","♂","♃","♄"].map((p,i)=>(
+              <span key={p} style={{animation:`pulse ${3+i*.3}s infinite ${i*.5}s`}}>{p}</span>))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if(view==="form") return (
+    <div><Stars/>
+      <div className="wrap"><Header/><Nav/>
+        <div className="fade-up card" style={{padding:"30px 26px"}}>
+          <h2 style={{marginBottom:4,fontWeight:"normal",fontSize:20,color:"#c084fc"}}>✦ Nova Consulta</h2>
+          <p style={{marginBottom:24,fontSize:13,color:"rgba(200,180,240,.45)"}}>
+            Posições exatas via Swiss Ephemeris — Tropical/Placidus</p>
+          {error&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",
+            borderRadius:10,padding:"10px 14px",marginBottom:18,fontSize:13,color:"#fca5a5"}}>⚠️ {error}</div>}
+          <div style={{display:"grid",gap:16}}>
+            <div><label>Nome completo</label>
+              <input className="input-field" placeholder="ex: Maria da Silva"
+                value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+            <div className="grid2">
+              <div><label>Data de nascimento</label>
+                <input className="input-field" type="date" value={form.date}
+                  onChange={e=>setForm({...form,date:e.target.value})}/></div>
+              <div><label>Hora de nascimento</label>
+                <input className="input-field" type="time" value={form.time}
+                  onChange={e=>setForm({...form,time:e.target.value})}/></div>
+            </div>
+            <div><label>Cidade de nascimento</label>
+              <input className="input-field" placeholder="ex: Goiânia, Goiás"
+                value={form.city} onChange={e=>setForm({...form,city:e.target.value})}/></div>
+            <div><label>Observações (opcional)</label>
+              <textarea className="input-field" rows={3} style={{resize:"vertical"}}
+                placeholder="Contexto da consulta, temas de interesse..."
+                value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></div>
+            <button className="btn-primary" onClick={handleSubmit}
+              disabled={!form.name||!form.date||!form.city||!backendOk||loading}>
+              {loading?"⏳ Calculando mapa…":"🔮 Gerar Mapa Natal + Análise"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if(view==="history") return (
+    <div><Stars/>
+      <div className="wrap"><Header/><Nav/>
+        <div className="fade-up">
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <h2 style={{fontWeight:"normal",fontSize:18,color:"#c084fc"}}>◈ Consultas Anteriores</h2>
+            {clients.length>0&&<button className="btn-ghost" style={{fontSize:12,color:"#fca5a5"}}
+              onClick={()=>{if(window.confirm("Apagar todo o histórico?")){persist([]);}}}>🗑 Limpar</button>}
+          </div>
+          {clients.length===0
+            ?<div className="card" style={{padding:40,textAlign:"center",color:"rgba(200,180,240,.4)"}}>
+              <div style={{fontSize:36,marginBottom:10}}>🌑</div>
+              <p>Nenhuma consulta realizada ainda.</p></div>
+            :<div style={{display:"grid",gap:10}}>
+              {clients.map(c=>(
+                <div key={c.id} className="client-row" onClick={()=>openClient(c)}>
+                  <div style={{fontSize:30}}>🌙</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:"bold",color:"#e2d9f3",fontSize:15}}>{c.name}</div>
+                    <div style={{fontSize:12,color:"rgba(200,180,240,.45)",marginTop:2}}>
+                      {c.date.split("-").reverse().join("/")} · {c.time||"hora n/inf"} · {c.city}</div>
+                    <div style={{marginTop:5,display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {c.analysis&&<span className="tag">✓ Analisado</span>}
+                      {c.mapImg&&<span className="tag">🗺 Mapa PNG</span>}
+                    </div>
+                  </div>
+                  <div style={{fontSize:20,color:"rgba(168,85,247,.5)"}}>›</div>
+                </div>))}
+            </div>}
+        </div>
+      </div>
+    </div>
+  );
+
+  if(view==="analysis") return (
+    <div><Stars/>
+      <div className="wrap"><Header/><Nav/>
+        {currentClient&&<div className="fade-up">
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,flexWrap:"wrap"}}>
+            <div style={{fontSize:32}}>🌙</div>
+            <div style={{flex:1}}>
+              <h2 style={{fontWeight:"normal",fontSize:20,color:"#c084fc"}}>{currentClient.name}</h2>
+              <p style={{fontSize:12,color:"rgba(200,180,240,.45)",marginTop:2}}>
+                {currentClient.date?.split("-").reverse().join("/")} · {currentClient.time||"hora n/inf"} · {currentClient.city}</p>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              {!streaming&&analysis&&<button className="btn-ghost" style={{fontSize:12}}
+                onClick={()=>exportPDF(currentClient,analysis,mapImg)}>📄 PDF</button>}
+              <button className="btn-ghost" style={{fontSize:12}} onClick={()=>setView("form")}>+ Nova</button>
+            </div>
+          </div>
+          <div className="card" style={{padding:16,marginBottom:18}}>
+            {loading
+              ?<div style={{textAlign:"center",padding:"28px 0"}}>
+                <div style={{fontSize:32,animation:"spin 3s linear infinite",display:"inline-block",marginBottom:10}}>✦</div>
+                <p style={{fontSize:13,color:"rgba(200,180,240,.55)"}}>Calculando posições via Swiss Ephemeris…</p>
+              </div>
+              :mapImg
+                ?<div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:10,fontSize:13,color:"rgba(200,180,255,.6)"}}>
+                    <span>✦ Mapa Natal + Trânsitos de hoje</span>
+                    {mapData&&<span style={{fontSize:11}}>ASC {mapData.asc} · MC {mapData.mc}</span>}
+                  </div>
+                  <img src={`data:image/png;base64,${mapImg}`} alt="Mapa Natal"
+                    style={{width:"100%",borderRadius:12,display:"block"}}/>
+                </div>
+                :<div style={{textAlign:"center",padding:"20px 0",color:"rgba(200,180,240,.4)"}}>Mapa não disponível</div>}
+          </div>
+          <div className="card" style={{padding:"24px 22px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
+              <span style={{fontSize:13,color:"rgba(200,180,255,.6)"}}>✦ Leitura Astrológica</span>
+              {streaming&&<span style={{fontSize:12,color:"#c084fc",animation:"pulse 1s infinite"}}>● escrevendo…</span>}
+            </div>
+            <div ref={analysisRef} style={{maxHeight:"55vh",overflowY:"auto",paddingRight:6}}>
+              <div className="analysis-body">{analysis}</div>
+              {streaming&&<span style={{animation:"pulse 1s infinite",color:"#c084fc",fontSize:18}}>▋</span>}
+            </div>
+          </div>
+        </div>}
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
