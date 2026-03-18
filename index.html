@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Madame Aline</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:linear-gradient(160deg,#06020f,#0d0520 50%,#091224);color:#e2d9f3;min-height:100vh}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+.header{text-align:center;padding:24px 0 12px}
+.header h1{font-size:26px;font-weight:normal;letter-spacing:3px;background:linear-gradient(135deg,#a855f7,#e879f9,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{font-size:11px;color:rgba(200,160,255,.5);letter-spacing:4px;text-transform:uppercase;margin-top:4px}
+.nav{display:flex;justify-content:center;gap:4px;margin:10px 0 22px;border-bottom:1px solid rgba(168,85,247,.15);padding-bottom:10px;align-items:center}
+.nav button{background:transparent;color:rgba(200,180,255,.6);border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:Georgia,serif;transition:all .2s}
+.nav button:hover,.nav button.active{color:#c084fc;background:rgba(168,85,247,.1)}
+.status{margin-left:auto;font-size:12px;display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.card{background:rgba(15,8,35,.8);border:1px solid rgba(168,85,247,.22);border-radius:18px;padding:28px 24px;animation:fadein .4s ease}
+.field{margin-bottom:16px}
+.field label{font-size:11px;color:rgba(200,180,255,.6);display:block;margin-bottom:5px;letter-spacing:.8px;text-transform:uppercase}
+.field input,.field textarea{background:rgba(255,255,255,.06);border:1px solid rgba(168,85,247,.28);color:#e2d9f3;padding:11px 14px;border-radius:11px;font-size:14px;width:100%;outline:none;font-family:Georgia,serif;transition:border .2s}
+.field input:focus,.field textarea:focus{border-color:rgba(168,85,247,.7)}
+.field input::placeholder,.field textarea::placeholder{color:rgba(226,217,243,.28)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.grid2{grid-template-columns:1fr}}
+.btn-primary{background:linear-gradient(135deg,#6d28d9,#a855f7);color:#fff;border:none;padding:14px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;letter-spacing:.8px;font-family:Georgia,serif;text-transform:uppercase;width:100%;transition:all .2s;margin-top:4px}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:rgba(255,255,255,.06);color:#d4bbf7;border:1px solid rgba(168,85,247,.3);padding:9px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-family:Georgia,serif;transition:all .2s}
+.btn-ghost:hover{background:rgba(168,85,247,.18)}
+.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#fca5a5}
+.map-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:rgba(200,180,255,.6)}
+.analysis{font-size:15px;line-height:1.95;color:#ddd6fe;white-space:pre-wrap}
+.loading-box{text-align:center;padding:30px 0}
+.spin{font-size:30px;display:inline-block;animation:spin 2s linear infinite;margin-bottom:10px}
+.client-row{background:rgba(255,255,255,.04);border:1px solid rgba(168,85,247,.14);border-radius:13px;padding:14px 18px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.client-row:hover{background:rgba(168,85,247,.12);transform:translateX(3px)}
+.tag{background:rgba(168,85,247,.2);color:#d8b4fe;border-radius:6px;padding:3px 8px;font-size:11px;margin-right:4px}
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.section-title{font-size:20px;font-weight:normal;color:#c084fc;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div style="font-size:32px;margin-bottom:4px">&#128302;</div>
+    <h1>Madame Aline</h1>
+    <p>Astrologia Psicológica</p>
+  </div>
+
+  <div class="nav">
+    <button onclick="showView('home')" id="btn-home" class="active">&#10022; Início</button>
+    <button onclick="showView('form')" id="btn-form">+ Consulta</button>
+    <button onclick="showView('history')" id="btn-history">&#9672; Histórico</button>
+    <div class="status">
+      <span class="dot" id="status-dot" style="background:#888"></span>
+      <span id="status-txt">verificando…</span>
+      <button id="retry-btn" onclick="checkHealth()" style="display:none;background:none;border:none;color:#fca5a5;font-size:11px;cursor:pointer;text-decoration:underline">retry</button>
+    </div>
+  </div>
+
+  <div id="view-home">
+    <div class="card" style="max-width:480px;margin:0 auto;text-align:center;padding:44px 32px">
+      <div style="font-size:52px;margin-bottom:16px">&#127769;</div>
+      <h2 style="font-weight:normal;font-size:22px;color:#c084fc;margin-bottom:10px">Bem-vinda ao Consultório</h2>
+      <p style="color:rgba(200,180,240,.65);line-height:1.8;font-size:15px;margin-bottom:28px">
+        Cada mapa natal é um espelho da alma — uma linguagem simbólica que convida ao autoconhecimento profundo.</p>
+      <button class="btn-primary" onclick="showView('form')">&#10022; Iniciar Nova Consulta</button>
+      <button class="btn-ghost" onclick="showView('history')" style="width:100%;margin-top:12px">Ver histórico</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:20px;margin-top:32px;font-size:22px;color:rgba(200,160,255,.4)">
+      <span style="animation:pulse 3s infinite">&#9737;</span>
+      <span style="animation:pulse 3.3s infinite .5s">&#9789;</span>
+      <span style="animation:pulse 3.6s infinite 1s">&#9791;</span>
+      <span style="animation:pulse 3.9s infinite 1.5s">&#9792;</span>
+      <span style="animation:pulse 4.2s infinite 2s">&#9794;</span>
+      <span style="animation:pulse 4.5s infinite 2.5s">&#9795;</span>
+    </div>
+  </div>
+
+  <div id="view-form" style="display:none">
+    <div class="card">
+      <h2 class="section-title">&#10022; Nova Consulta</h2>
+      <p style="font-size:13px;color:rgba(200,180,240,.45);margin-bottom:22px">Posições exatas via Swiss Ephemeris — Tropical/Placidus</p>
+      <div id="form-error" class="err" style="display:none"></div>
+      <div class="field"><label>Nome completo</label><input id="f-name" placeholder="ex: Maria da Silva"/></div>
+      <div class="grid2">
+        <div class="field"><label>Data de nascimento</label><input id="f-date" type="date"/></div>
+        <div class="field"><label>Hora de nascimento</label><input id="f-time" type="time"/></div>
+      </div>
+      <div class="field"><label>Cidade de nascimento</label><input id="f-city" placeholder="ex: Goiânia, Goiás"/></div>
+      <div class="field"><label>Observações (opcional)</label><textarea id="f-notes" rows="3" placeholder="Contexto da consulta, temas de interesse..."></textarea></div>
+      <button class="btn-primary" id="btn-submit" onclick="handleSubmit()">&#128302; Gerar Mapa Natal + Análise</button>
+    </div>
+  </div>
+
+  <div id="view-history" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 class="section-title" style="margin:0">&#9672; Consultas Anteriores</h2>
+      <button class="btn-ghost" style="font-size:12px;color:#fca5a5" onclick="clearHistory()">&#128465; Limpar</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <div id="view-analysis" style="display:none">
+    <div class="top-bar">
+      <div style="font-size:30px">&#127769;</div>
+      <div style="flex:1">
+        <div id="a-name" style="font-size:20px;color:#c084fc"></div>
+        <div id="a-meta" style="font-size:12px;color:rgba(200,180,240,.45);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="font-size:12px" onclick="doPDF()">&#128196; PDF</button>
+        <button class="btn-ghost" style="font-size:12px" onclick="showView('form')">+ Nova</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:18px;padding:16px" id="map-card">
+      <div class="loading-box" id="map-loading">
+        <div class="spin">&#10022;</div>
+        <p style="font-size:13px;color:rgba(200,180,240,.55)">Calculando posições via Swiss Ephemeris…</p>
+      </div>
+      <div id="map-content" style="display:none">
+        <div class="map-header">
+          <span>&#10022; Mapa Natal + Trânsitos de hoje</span>
+          <span id="map-meta" style="font-size:11px"></span>
+        </div>
+        <img id="map-img" alt="Mapa Natal" style="width:100%;border-radius:12px;display:block"/>
+      </div>
+    </div>
+    <div class="card" style="padding:24px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;align-items:center">
+        <span style="font-size:13px;color:rgba(200,180,255,.6)">&#10022; Leitura Astrológica</span>
+        <span id="analysis-status" style="font-size:12px;color:#c084fc;animation:pulse 1s infinite;display:none">&#9679; preparando…</span>
+      </div>
+      <div id="analysis-text" class="analysis"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var API = "https://web-production-c5240.up.railway.app";
+var STORAGE_KEY = "aline_clients_v3";
+var clients = [];
+var currentClient = null;
+var currentMapImg = null;
+var currentMapData = null;
+
+try { clients = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch(e) {}
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clients)); } catch(e) {} }
+
+function showView(v) {
+  var views = ["home","form","history","analysis"];
+  for (var i = 0; i < views.length; i++) {
+    document.getElementById("view-" + views[i]).style.display = views[i] === v ? "block" : "none";
+    var b = document.getElementById("btn-" + views[i]);
+    if (b) b.className = views[i] === v ? "active" : "";
+  }
+  if (v === "history") renderHistory();
+}
+
+function checkHealth() {
+  document.getElementById("status-dot").style.background = "#888";
+  document.getElementById("status-txt").textContent = "verificando…";
+  document.getElementById("retry-btn").style.display = "none";
+  fetch(API + "/health")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var ok = d.ok && d.pipeline;
+      document.getElementById("status-dot").style.background = ok ? "#4ade80" : "#f87171";
+      document.getElementById("status-txt").textContent = ok ? "servidor OK" : "offline";
+      document.getElementById("status-txt").style.color = ok ? "#86efac" : "#fca5a5";
+      if (!ok) document.getElementById("retry-btn").style.display = "inline";
+    })
+    .catch(function() {
+      document.getElementById("status-dot").style.background = "#f87171";
+      document.getElementById("status-txt").textContent = "offline";
+      document.getElementById("status-txt").style.color = "#fca5a5";
+      document.getElementById("retry-btn").style.display = "inline";
+    });
+}
+
+function geocode(city) {
+  return fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(city) + "&format=json&limit=1", {headers:{"Accept-Language":"pt-BR"}})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (!d.length) throw new Error("Cidade não encontrada");
+      return {lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon)};
+    });
+}
+
+function handleSubmit() {
+  var name  = document.getElementById("f-name").value.trim();
+  var date  = document.getElementById("f-date").value;
+  var time  = document.getElementById("f-time").value;
+  var city  = document.getElementById("f-city").value.trim();
+  var notes = document.getElementById("f-notes").value.trim();
+  var errEl = document.getElementById("form-error");
+
+  if (!name || !date || !city) {
+    errEl.textContent = "Preencha nome, data e cidade.";
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+
+  var btn = document.getElementById("btn-submit");
+  btn.disabled = true;
+  btn.textContent = "Buscando cidade…";
+
+  geocode(city).then(function(geo) {
+    btn.textContent = "Calculando mapa…";
+    var parts = date.split("-");
+    var y = parseInt(parts[0]), m = parseInt(parts[1]), d2 = parseInt(parts[2]);
+    var timeParts = (time || "12:00").split(":");
+    var h = parseInt(timeParts[0]) || 12;
+    var mi = parseInt(timeParts[1]) || 0;
+
+    var client = {name:name, date:date, time:time, city:city, notes:notes,
+      id: String(Date.now()), lat:geo.lat, lon:geo.lon, createdAt: new Date().toISOString()};
+    clients.unshift(client);
+    save();
+    currentClient = client;
+    currentMapImg = null;
+    currentMapData = null;
+
+    document.getElementById("a-name").textContent = name;
+    document.getElementById("a-meta").textContent = date.split("-").reverse().join("/") + (time ? " · " + time : "") + " · " + city;
+    document.getElementById("map-loading").style.display = "block";
+    document.getElementById("map-content").style.display = "none";
+    document.getElementById("analysis-text").textContent = "";
+    document.getElementById("analysis-status").style.display = "inline";
+    showView("analysis");
+    btn.disabled = false;
+    btn.textContent = "Gerar Mapa Natal + Análise";
+
+    fetch(API + "/mapa", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name:name, year:y, month:m, day:d2, hour:h, minute:mi, utc_offset:-3, lat:geo.lat, lon:geo.lon, city:city})})
+      .then(function(r) {
+        if (!r.ok) throw new Error("Erro " + r.status);
+        return r.json();
+      })
+      .then(function(md) {
+        currentMapData = md;
+        currentMapImg = md.image_b64;
+        document.getElementById("map-img").src = "data:image/png;base64," + md.image_b64;
+        document.getElementById("map-meta").textContent = "ASC " + md.asc + " · MC " + md.mc;
+        document.getElementById("map-loading").style.display = "none";
+        document.getElementById("map-content").style.display = "block";
+        return runAnalise(client, md);
+      })
+      .catch(function(e) {
+        document.getElementById("map-loading").style.display = "none";
+        document.getElementById("analysis-text").textContent = "Erro ao gerar mapa: " + e.message;
+        document.getElementById("analysis-status").style.display = "none";
+      });
+
+  }).catch(function() {
+    btn.disabled = false;
+    btn.textContent = "Gerar Mapa Natal + Análise";
+    errEl.textContent = "Cidade não encontrada. Tente com nome mais completo.";
+    errEl.style.display = "block";
+  });
+}
+
+function runAnalise(client, md) {
+  document.getElementById("analysis-text").textContent = "Madame Aline está preparando sua leitura...";
+  document.getElementById("analysis-status").style.display = "inline";
+  var body = {name:client.name,
+    birth_info: client.date + (client.time ? " às " + client.time : "") + " — " + client.city,
+    planets_text: md.planets_text, aspects_text: md.aspects_text,
+    asc: md.asc, mc: md.mc, fortuna: md.fortuna, notes: client.notes || ""};
+  return fetch(API + "/analise-simples", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})
+    .then(function(r) {
+      if (!r.ok) throw new Error("Erro " + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      var text = data.analysis || "Resposta vazia.";
+      document.getElementById("analysis-text").textContent = text;
+      document.getElementById("analysis-status").style.display = "none";
+      for (var i = 0; i < clients.length; i++) {
+        if (clients[i].id === client.id) {
+          clients[i].analysis = text;
+          clients[i].mapImg = md.image_b64;
+          clients[i].mapData = md;
+          clients[i].analyzedAt = new Date().toISOString();
+          break;
+        }
+      }
+      save();
+    })
+    .catch(function(e) {
+      document.getElementById("analysis-text").textContent = "Erro ao gerar análise: " + e.message;
+      document.getElementById("analysis-status").style.display = "none";
+    });
+}
+
+function renderHistory() {
+  var el = document.getElementById("history-list");
+  if (!clients.length) {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:rgba(200,180,240,.4)"><div style="font-size:36px;margin-bottom:10px">&#127765;</div><p>Nenhuma consulta ainda.</p></div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < clients.length; i++) {
+    var c = clients[i];
+    html += '<div class="client-row" onclick="openClient(\'' + c.id + '\')">';
+    html += '<div style="font-size:28px">&#127769;</div>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-weight:bold;font-size:15px;color:#e2d9f3">' + c.name + '</div>';
+    html += '<div style="font-size:12px;color:rgba(200,180,240,.45);margin-top:2px">' + c.date.split("-").reverse().join("/") + ' · ' + (c.time||"hora n/inf") + ' · ' + c.city + '</div>';
+    html += '<div style="margin-top:5px">';
+    if (c.analysis) html += '<span class="tag">Analisado</span>';
+    if (c.mapImg)   html += '<span class="tag">Mapa</span>';
+    html += '</div></div>';
+    html += '<div style="font-size:20px;color:rgba(168,85,247,.5)">›</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function openClient(id) {
+  var c = null;
+  for (var i = 0; i < clients.length; i++) {
+    if (clients[i].id === id) { c = clients[i]; break; }
+  }
+  if (!c) return;
+  currentClient = c;
+  currentMapImg = c.mapImg || null;
+  currentMapData = c.mapData || null;
+  document.getElementById("a-name").textContent = c.name;
+  document.getElementById("a-meta").textContent = c.date.split("-").reverse().join("/") + (c.time ? " · " + c.time : "") + " · " + c.city;
+  document.getElementById("analysis-status").style.display = "none";
+  if (c.mapImg) {
+    document.getElementById("map-loading").style.display = "none";
+    document.getElementById("map-content").style.display = "block";
+    document.getElementById("map-img").src = "data:image/png;base64," + c.mapImg;
+    if (c.mapData) document.getElementById("map-meta").textContent = "ASC " + c.mapData.asc + " · MC " + c.mapData.mc;
+  } else {
+    document.getElementById("map-loading").style.display = "none";
+    document.getElementById("map-content").style.display = "none";
+  }
+  document.getElementById("analysis-text").textContent = c.analysis || "";
+  showView("analysis");
+}
+
+function clearHistory() {
+  if (window.confirm("Apagar todo o histórico?")) { clients = []; save(); renderHistory(); }
+}
+
+function doPDF() {
+  if (!currentClient) return;
+  var analysis = document.getElementById("analysis-text").textContent;
+  var w = window.open("", "_blank");
+  w.document.write("<!DOCTYPE html><html><head><meta charset='utf-8'><title>Mapa — " + currentClient.name + "</title><style>body{font-family:Georgia,serif;max-width:780px;margin:40px auto;padding:0 32px;color:#1a1a2e;line-height:1.85}h1{color:#6d28d9;font-size:24px;border-bottom:2px solid #a855f7;padding-bottom:10px}.meta{color:#666;font-size:13px;margin-bottom:24px}img{width:100%;max-width:580px;display:block;margin:20px auto;border-radius:10px}pre{white-space:pre-wrap;font-size:14px;font-family:Georgia,serif}</style></head><body>");
+  w.document.write("<h1>Mapa Astral — " + currentClient.name + "</h1>");
+  w.document.write("<div class='meta'>" + currentClient.date + " " + (currentClient.time||"") + " · " + currentClient.city + " · " + new Date().toLocaleDateString("pt-BR") + "</div>");
+  if (currentMapImg) w.document.write("<img src='data:image/png;base64," + currentMapImg + "'/>");
+  w.document.write("<hr/><pre>" + analysis + "</pre></body></html>");
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 600);
+}
+
+checkHealth();
+showView("home");
+</script>
+</body>
+</html>
